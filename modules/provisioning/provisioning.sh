@@ -71,6 +71,11 @@ SUCCESS_COUNT=0
 FAIL_COUNT=0
 FAILED_HOSTS=()
 
+# Pre-encode variables locally to prevent SSH/Shell parsing injection
+B64_UBUNTU_PASS=$(printf '%s' "$UBUNTU_PASS" | base64 | tr -d '\n')
+B64_DEVOPS_PASS=$(printf '%s' "$DEVOPS_PASS" | base64 | tr -d '\n')
+B64_PUBKEY=$(printf '%s' "$DEVOPS_PUBKEY" | base64 | tr -d '\n')
+
 while IFS= read -r HOST || [[ -n "$HOST" ]]; do
   # Skip empty lines and comments
   [[ -z "$HOST" || "$HOST" =~ ^# ]] && continue
@@ -78,10 +83,27 @@ while IFS= read -r HOST || [[ -n "$HOST" ]]; do
 
   print_section "Processing: $HOST"
 
-  # Build remote command
-  REMOTE_CMD=$(cat <<REMOTE_SCRIPT
-echo "${UBUNTU_PASS}" | sudo -S -p "" bash -s <<EOF_ROOT
+  # Build remote command via Base64 to safely bridge over SSH shell parsing
+  REMOTE_SCRIPT_PLAIN=$(
+cat <<EOF_INJECT
+B64_UBUNTU_PASS="${B64_UBUNTU_PASS}"
+B64_DEVOPS_PASS="${B64_DEVOPS_PASS}"
+B64_DEVOPS_PUBKEY="${B64_PUBKEY}"
+VAR_SSH_USER="${SSH_USER}"
+VAR_TIMEZONE="${TIMEZONE}"
+EOF_INJECT
+cat <<'EOF_SCRIPT'
+UBUNTU_PASS_DEC=$(echo "$B64_UBUNTU_PASS" | { base64 -d 2>/dev/null || base64 --decode; })
+DEVOPS_PASS_DEC=$(echo "$B64_DEVOPS_PASS" | { base64 -d 2>/dev/null || base64 --decode; })
+PUBKEY_DEC=$(echo "$B64_DEVOPS_PUBKEY" | { base64 -d 2>/dev/null || base64 --decode; })
+
+printf '%s\n' "$UBUNTU_PASS_DEC" | sudo -S -p "" bash -s "$DEVOPS_PASS_DEC" "$VAR_SSH_USER" "$VAR_TIMEZONE" "$PUBKEY_DEC" <<'EOF_ROOT'
 set -e
+
+ARG_DEVOPS_PASS=$1
+ARG_SSH_USER=$2
+ARG_TIMEZONE=$3
+ARG_PUBKEY=$4
 
 # ─── SSH Config ───
 mkdir -p /etc/ssh/sshd_config.d
@@ -90,7 +112,7 @@ tee /etc/ssh/sshd_config.d/01-rule.conf >/dev/null <<SSHEOF
 PasswordAuthentication yes
 PubkeyAuthentication yes
 
-Match User ${SSH_USER}
+Match User ${ARG_SSH_USER}
     PasswordAuthentication no
     PubkeyAuthentication yes
 
@@ -108,7 +130,7 @@ if id devops >/dev/null 2>&1; then
 else
     echo "Membuat user devops..."
     useradd -m -s /bin/bash devops
-    echo "devops:${DEVOPS_PASS}" | chpasswd
+    echo "devops:${ARG_DEVOPS_PASS}" | chpasswd
 fi
 
 # ─── Sudoers ───
@@ -120,8 +142,8 @@ visudo -cf /etc/sudoers.d/devops
 # ─── SSH key setup ───
 install -m 700 -o devops -g devops -d /home/devops/.ssh
 
-if ! grep -qxF "${DEVOPS_PUBKEY}" /home/devops/.ssh/authorized_keys 2>/dev/null; then
-    echo "${DEVOPS_PUBKEY}" | tee -a /home/devops/.ssh/authorized_keys >/dev/null
+if ! grep -qxF "${ARG_PUBKEY}" /home/devops/.ssh/authorized_keys 2>/dev/null; then
+    echo "${ARG_PUBKEY}" | tee -a /home/devops/.ssh/authorized_keys >/dev/null
 fi
 
 chown -R devops:devops /home/devops/.ssh
@@ -129,15 +151,18 @@ chmod 600 /home/devops/.ssh/authorized_keys
 
 # ─── Timezone ───
 if command -v timedatectl >/dev/null 2>&1; then
-    timedatectl set-timezone ${TIMEZONE}
+    timedatectl set-timezone ${ARG_TIMEZONE}
 else
-    ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
+    ln -sf /usr/share/zoneinfo/${ARG_TIMEZONE} /etc/localtime
 fi
 
 echo "✅ Server provisioning selesai"
 EOF_ROOT
-REMOTE_SCRIPT
-)
+EOF_SCRIPT
+  )
+
+  REMOTE_CMD_B64=$(printf "%s" "$REMOTE_SCRIPT_PLAIN" | base64 | tr -d '\n')
+  REMOTE_CMD="echo '${REMOTE_CMD_B64}' | { base64 -d 2>/dev/null || base64 --decode; } | bash"
 
   # Execute via smart SSH (try key, fallback password)
   if ssh_smart_exec "$SSH_USER" "$HOST" "$SSH_KEY" "$UBUNTU_PASS" "$REMOTE_CMD"; then
