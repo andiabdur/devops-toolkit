@@ -18,6 +18,10 @@ require_command "kubectl"
 # ─── Input ───
 print_section "Backup Configuration"
 
+log_info "Available namespaces:"
+kubectl get namespaces
+echo ""
+
 read -rp "  Namespace yang mau dibackup (pisahkan koma / ketik all): " INPUT_NS
 read -rp "  Nama server ini (contoh: btu-cp-01): " INPUT_HOST
 

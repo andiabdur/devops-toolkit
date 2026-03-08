@@ -41,7 +41,18 @@ ssh_exec_pass() {
   local password="$3"
   local cmd="$4"
 
-  require_command "sshpass" "sudo apt install sshpass -y"
+  if ! command -v sshpass &>/dev/null; then
+    log_warn "sshpass is not installed, trying to install automatically..."
+    if command -v apt-get &>/dev/null; then
+      sudo apt-get update -yqq && sudo apt-get install -y sshpass
+    elif command -v yum &>/dev/null; then
+      sudo yum install -y epel-release && sudo yum install -y sshpass
+    else
+      log_error "Paket manager tidak didukung untuk auto-install sshpass. Install manual!"
+      exit 1
+    fi
+    log_ok "sshpass installed successfully"
+  fi
 
   SSHPASS="$password" sshpass -e ssh -tt \
     -o StrictHostKeyChecking=no \

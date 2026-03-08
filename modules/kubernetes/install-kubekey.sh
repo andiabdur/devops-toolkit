@@ -11,7 +11,21 @@ source "$SCRIPT_DIR/../../lib/common.sh"
 
 print_banner "Kubernetes Cluster Setup (KubeKey)"
 
-# ─── 1. Download KubeKey ───
+# ─── 1. Install Dependencies ───
+print_section "Install Dependencies"
+
+log_info "Checking & installing KubeKey dependencies (socat, conntrack, ipvsadm, dll)..."
+if command -v apt-get &>/dev/null; then
+  sudo apt-get update -yqq && sudo apt-get install -y socat conntrack ipset ipvsadm ebtables
+  log_ok "Dependensi berhasil diinstall (apt)"
+elif command -v yum &>/dev/null; then
+  sudo yum install -y socat conntrack ipset ipvsadm ebtables
+  log_ok "Dependensi berhasil diinstall (yum)"
+else
+  log_warn "Paket manager tidak didukung untuk auto-install dependensi. Install manual: socat conntrack ipset ipvsadm ebtables"
+fi
+
+# ─── 2. Download KubeKey ───
 print_section "Download KubeKey"
 
 if [ -f "./kk" ]; then
@@ -23,7 +37,7 @@ fi
 
 chmod +x kk
 
-# ─── 2. Input Config ───
+# ─── 3. Input Config ───
 print_section "Input Config Data"
 
 read -rp "  ${WHITE}Versi Kubernetes (contoh: v1.33.1): ${RESET}" k8s_version
@@ -80,7 +94,7 @@ if [[ "$node_count" -gt 1 ]]; then
   fi
 fi
 
-# ─── 3. Input Node Details ───
+# ─── 4. Input Node Details ───
 print_section "Input Node Details"
 
 hosts_block=""
@@ -139,7 +153,7 @@ for (( i=1; i<=node_count; i++ )); do
   fi
 done
 
-# ─── 4. Optional: Network & Endpoint Config ───
+# ─── 5. Optional: Network & Endpoint Config ───
 print_section "Network Config (tekan Enter untuk default)"
 
 read -rp "  Control Plane Domain [lb.kubesphere.local]: " cp_domain
@@ -154,7 +168,7 @@ svc_cidr=${svc_cidr:-10.233.0.0/18}
 read -rp "  CNI Plugin [calico]: " cni_plugin
 cni_plugin=${cni_plugin:-calico}
 
-# ─── 5. Generate Config ───
+# ─── 6. Generate Config ───
 print_section "Generate Config File"
 
 cat > "$config_file" <<EOF
@@ -208,7 +222,7 @@ log_info "Node count: $node_count"
 log_info "Auth mode: $(if [[ "$auth_mode" == "1" ]]; then echo "Password"; else echo "SSH Key"; fi)"
 log_info "CNI: $cni_plugin"
 
-# ─── 6. Create Cluster ───
+# ─── 7. Create Cluster ───
 if confirm "Jalankan create cluster sekarang?"; then
   countdown 5 "Mulai dalam"
   log_step "Menjalankan: ./kk create cluster -f $config_file"
