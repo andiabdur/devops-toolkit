@@ -201,13 +201,17 @@ bash modules/kubernetes/install-kubekey.sh
 **Yang ditanya:**
 - Versi Kubernetes (contoh: `v1.33.1`)
 - Nama file config
-- Jumlah node + IP + credentials
+- Jumlah node
+- **Metode autentikasi SSH:**
+  - `1) Password` — akses node pakai user + password
+  - `2) SSH Key` — akses node pakai user + private key path
+- IP + credentials per node
 - Network config (Pod CIDR, Service CIDR, CNI plugin)
 
 **Output:** File config YAML + eksekusi `kk create cluster`
 
 <details>
-<summary>📸 Contoh alur</summary>
+<summary>📸 Contoh alur (Password mode)</summary>
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -216,9 +220,47 @@ bash modules/kubernetes/install-kubekey.sh
   Versi Kubernetes (contoh: v1.33.1): v1.33.1
   Nama file config: config-production.yaml
   Berapa jumlah node? 3
-  Semua node pakai user & password sama? (Y/N): Y
+
+  Pilih metode autentikasi SSH ke node:
+    1) Password
+    2) SSH Key (Private Key)
+  Pilih [1/2]: 1
+  [INFO]  Mode: Password
+
+  Semua node pakai credential sama? (Y/N): Y
     User: ubuntu
     Password: ****
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Input Node Details
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[STEP]  Node ke-1 dari 3
+    Name: master-01
+    Address (IP): 192.168.1.10
+...
+```
+</details>
+
+<details>
+<summary>📸 Contoh alur (SSH Key mode)</summary>
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Input Config Data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Versi Kubernetes (contoh: v1.33.1): v1.33.1
+  Nama file config: config-production.yaml
+  Berapa jumlah node? 3
+
+  Pilih metode autentikasi SSH ke node:
+    1) Password
+    2) SSH Key (Private Key)
+  Pilih [1/2]: 2
+  [INFO]  Mode: SSH Key
+
+  Semua node pakai credential sama? (Y/N): Y
+    User: ubuntu
+    Private key path (contoh: ~/.ssh/id_rsa): ~/.ssh/id_rsa
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Input Node Details
@@ -506,6 +548,7 @@ Repo ini merupakan konsolidasi dari 4 repo terpisah:
 - ✅ Shared library → eliminasi kode duplikat
 - ✅ Credential file menggunakan temp file + auto-cleanup (`trap`)
 - ✅ Semua script punya shebang (`#!/bin/bash`) dan `set -e`
+- ✅ KubeKey: support SSH Key auth (selain password)
 - ✅ Validasi namespace sebelum backup Velero
 - ✅ Preview backup sebelum restore (server config)
 - ✅ Menghilangkan `eval` berbahaya di provisioning

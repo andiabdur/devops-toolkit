@@ -36,17 +36,47 @@ if ! [[ "$node_count" =~ ^[0-9]+$ ]] || [[ "$node_count" -lt 1 ]]; then
   exit 1
 fi
 
+# ─── Auth Mode ───
+echo ""
+echo "  ${WHITE}Pilih metode autentikasi SSH ke node:${RESET}"
+echo "    ${GREEN}1)${RESET} Password"
+echo "    ${GREEN}2)${RESET} SSH Key (Private Key)"
+echo ""
+read -rp "  ${WHITE}Pilih [1/2]: ${RESET}" auth_mode
+
+if [[ "$auth_mode" != "1" && "$auth_mode" != "2" ]]; then
+  log_error "Pilihan tidak valid, harus 1 atau 2"
+  exit 1
+fi
+
 common_user=""
 common_pass=""
+common_key_path=""
 same_credential=""
 
+if [[ "$auth_mode" == "1" ]]; then
+  log_info "Mode: ${GREEN}Password${RESET}"
+elif [[ "$auth_mode" == "2" ]]; then
+  log_info "Mode: ${GREEN}SSH Key${RESET}"
+fi
+
 if [[ "$node_count" -gt 1 ]]; then
-  read -rp "  ${WHITE}Semua node pakai user & password sama? (Y/N): ${RESET}" same_credential
+  read -rp "  ${WHITE}Semua node pakai credential sama? (Y/N): ${RESET}" same_credential
 
   if [[ "$same_credential" =~ ^[Yy]$ ]]; then
     read -rp "    User: " common_user
-    read -s -rp "    Password: " common_pass
-    echo ""
+
+    if [[ "$auth_mode" == "1" ]]; then
+      read -s -rp "    Password: " common_pass
+      echo ""
+    else
+      read -rp "    Private key path (contoh: ~/.ssh/id_rsa): " common_key_path
+      # Expand ~ ke full path
+      common_key_path="${common_key_path/#\~/$HOME}"
+      if [[ ! -f "$common_key_path" ]]; then
+        log_warn "File '$common_key_path' tidak ditemukan di mesin ini (mungkin ada di target server)"
+      fi
+    fi
   fi
 fi
 
@@ -76,13 +106,27 @@ for (( i=1; i<=node_count; i++ )); do
   if [[ "$same_credential" =~ ^[Yy]$ ]]; then
     node_user="$common_user"
     node_pass="$common_pass"
+    node_key="$common_key_path"
   else
     read -rp "    User: " node_user
-    read -s -rp "    Password: " node_pass
-    echo ""
+
+    if [[ "$auth_mode" == "1" ]]; then
+      read -s -rp "    Password: " node_pass
+      node_key=""
+      echo ""
+    else
+      node_pass=""
+      read -rp "    Private key path (contoh: ~/.ssh/id_rsa): " node_key
+      node_key="${node_key/#\~/$HOME}"
+    fi
   fi
 
-  hosts_block+="    - {name: $node_name, address: $node_ip, internalAddress: $node_ip, user: $node_user, password: \"$node_pass\"}\n"
+  # Generate hosts block berdasarkan auth mode
+  if [[ "$auth_mode" == "1" ]]; then
+    hosts_block+="    - {name: $node_name, address: $node_ip, internalAddress: $node_ip, user: $node_user, password: \"$node_pass\"}\n"
+  else
+    hosts_block+="    - {name: $node_name, address: $node_ip, internalAddress: $node_ip, user: $node_user, privateKeyPath: \"$node_key\"}\n"
+  fi
 
   # Node pertama → etcd + control-plane + worker
   # Node lainnya → worker
@@ -161,6 +205,7 @@ EOF
 log_ok "Config berhasil dibuat: $config_file"
 log_info "Kubernetes version: $k8s_version"
 log_info "Node count: $node_count"
+log_info "Auth mode: $(if [[ "$auth_mode" == "1" ]]; then echo "Password"; else echo "SSH Key"; fi)"
 log_info "CNI: $cni_plugin"
 
 # ─── 6. Create Cluster ───
