@@ -1,0 +1,29 @@
+# Logs
+*.log
+
+# Credentials (jangan sampai ke-commit)
+credentials-*
+*.pem
+*.key
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+*~
+
+# KubeKey binary
+kk
+
+# Generated configs (optional, uncomment jika perlu)
+# config-*.yaml
+
+# Server list (berisi IP, jangan commit)
+modules/provisioning/servers.txt
+
+# Backup files
+*.tar.gz
