@@ -32,6 +32,15 @@ echo "    /etc/nginx/nginx.conf (jika ada)"
 echo "    /etc/hosts"
 echo ""
 
+if [[ -d "/home/devops" ]]; then
+  log_info "Sebagai referensi, ini isi folder /home/devops saat ini:"
+  # List direktori/folder yang ada (1 level)
+  if command -v ls &>/dev/null; then
+    ls -1p /home/devops | awk '{print "    - "$1}'
+  fi
+  echo ""
+fi
+
 read -rp "  Exclude folder di /home/devops (comma separated, opsional): " EXCLUDE_INPUT
 
 # ─── Config ───
