@@ -80,12 +80,13 @@ while IFS= read -r HOST || [[ -n "$HOST" ]]; do
 
   # Build remote command
   REMOTE_CMD=$(cat <<REMOTE_SCRIPT
+echo "${UBUNTU_PASS}" | sudo -S -p "" bash -s <<EOF_ROOT
 set -e
 
 # ─── SSH Config ───
-sudo mkdir -p /etc/ssh/sshd_config.d
+mkdir -p /etc/ssh/sshd_config.d
 
-sudo tee /etc/ssh/sshd_config.d/01-rule.conf >/dev/null <<'SSHEOF'
+tee /etc/ssh/sshd_config.d/01-rule.conf >/dev/null <<SSHEOF
 PasswordAuthentication yes
 PubkeyAuthentication yes
 
@@ -98,42 +99,43 @@ Match User devops
     PubkeyAuthentication yes
 SSHEOF
 
-sudo sshd -t
-sudo systemctl restart ssh || sudo systemctl restart sshd
+sshd -t
+systemctl restart ssh || systemctl restart sshd
 
 # ─── Create user devops ───
 if id devops >/dev/null 2>&1; then
     echo "User devops sudah ada"
 else
     echo "Membuat user devops..."
-    sudo useradd -m -s /bin/bash devops
-    echo "devops:${DEVOPS_PASS}" | sudo chpasswd
+    useradd -m -s /bin/bash devops
+    echo "devops:${DEVOPS_PASS}" | chpasswd
 fi
 
 # ─── Sudoers ───
-sudo usermod -aG sudo devops 2>/dev/null || sudo usermod -aG wheel devops 2>/dev/null || true
-echo "devops ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/devops >/dev/null
-sudo chmod 440 /etc/sudoers.d/devops
-sudo visudo -cf /etc/sudoers.d/devops
+usermod -aG sudo devops 2>/dev/null || usermod -aG wheel devops 2>/dev/null || true
+echo "devops ALL=(ALL) NOPASSWD:ALL" | tee /etc/sudoers.d/devops >/dev/null
+chmod 440 /etc/sudoers.d/devops
+visudo -cf /etc/sudoers.d/devops
 
 # ─── SSH key setup ───
-sudo install -m 700 -o devops -g devops -d /home/devops/.ssh
+install -m 700 -o devops -g devops -d /home/devops/.ssh
 
-if ! sudo grep -qxF "${DEVOPS_PUBKEY}" /home/devops/.ssh/authorized_keys 2>/dev/null; then
-    echo "${DEVOPS_PUBKEY}" | sudo tee -a /home/devops/.ssh/authorized_keys >/dev/null
+if ! grep -qxF "${DEVOPS_PUBKEY}" /home/devops/.ssh/authorized_keys 2>/dev/null; then
+    echo "${DEVOPS_PUBKEY}" | tee -a /home/devops/.ssh/authorized_keys >/dev/null
 fi
 
-sudo chown -R devops:devops /home/devops/.ssh
-sudo chmod 600 /home/devops/.ssh/authorized_keys
+chown -R devops:devops /home/devops/.ssh
+chmod 600 /home/devops/.ssh/authorized_keys
 
 # ─── Timezone ───
 if command -v timedatectl >/dev/null 2>&1; then
-    sudo timedatectl set-timezone ${TIMEZONE}
+    timedatectl set-timezone ${TIMEZONE}
 else
-    sudo ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
+    ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
 fi
 
 echo "✅ Server provisioning selesai"
+EOF_ROOT
 REMOTE_SCRIPT
 )
 
