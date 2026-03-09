@@ -30,7 +30,7 @@ ssh_exec_key() {
   local key="$3"
   local cmd="$4"
 
-  ssh -tt -i "$key" -o StrictHostKeyChecking=no "${user}@${host}" "$cmd"
+  ssh -i "$key" -o StrictHostKeyChecking=no "${user}@${host}" "$cmd" < /dev/null
 }
 
 # ─── Execute remote command via SSH (password-based) ───
@@ -54,11 +54,11 @@ ssh_exec_pass() {
     log_ok "sshpass installed successfully"
   fi
 
-  SSHPASS="$password" sshpass -e ssh -tt \
+  SSHPASS="$password" sshpass -e ssh \
     -o StrictHostKeyChecking=no \
     -o PreferredAuthentications=password \
     -o PubkeyAuthentication=no \
-    "${user}@${host}" "$cmd"
+    "${user}@${host}" "$cmd" < /dev/null
 }
 
 # ─── Smart SSH exec: try key first, fallback to password ───
