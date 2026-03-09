@@ -76,7 +76,7 @@ B64_UBUNTU_PASS=$(printf '%s' "$UBUNTU_PASS" | base64 | tr -d '\n')
 B64_DEVOPS_PASS=$(printf '%s' "$DEVOPS_PASS" | base64 | tr -d '\n')
 B64_PUBKEY=$(printf '%s' "$DEVOPS_PUBKEY" | base64 | tr -d '\n')
 
-while IFS= read -r HOST || [[ -n "$HOST" ]]; do
+while IFS= read -u 9 -r HOST || [[ -n "$HOST" ]]; do
   # Skip empty lines and comments
   [[ -z "$HOST" || "$HOST" =~ ^# ]] && continue
   HOST=$(echo "$HOST" | xargs)
@@ -175,7 +175,7 @@ EOF_SCRIPT
   fi
 
   echo ""
-done < "$SERVER_LIST"
+done 9< "$SERVER_LIST"
 
 # ─── Summary ───
 print_section "Summary"
