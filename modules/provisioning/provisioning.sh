@@ -97,7 +97,8 @@ UBUNTU_PASS_DEC=$(echo "$B64_UBUNTU_PASS" | { base64 -d 2>/dev/null || base64 --
 DEVOPS_PASS_DEC=$(echo "$B64_DEVOPS_PASS" | { base64 -d 2>/dev/null || base64 --decode; })
 PUBKEY_DEC=$(echo "$B64_DEVOPS_PUBKEY" | { base64 -d 2>/dev/null || base64 --decode; })
 
-printf '%s\n' "$UBUNTU_PASS_DEC" | sudo -S -p "" bash -s "$DEVOPS_PASS_DEC" "$VAR_SSH_USER" "$VAR_TIMEZONE" "$PUBKEY_DEC" <<'EOF_ROOT'
+SCRIPT_PATH="/tmp/prov_$(date +%s)_$RANDOM.sh"
+cat <<'EOF_ROOT' > "$SCRIPT_PATH"
 set -e
 
 ARG_DEVOPS_PASS=$1
@@ -158,6 +159,12 @@ fi
 
 echo "✅ Server provisioning selesai"
 EOF_ROOT
+
+chmod +x "$SCRIPT_PATH"
+printf '%s\n' "$UBUNTU_PASS_DEC" | sudo -S -p "" bash "$SCRIPT_PATH" "$DEVOPS_PASS_DEC" "$VAR_SSH_USER" "$VAR_TIMEZONE" "$PUBKEY_DEC"
+EXIT_CODE=$?
+rm -f "$SCRIPT_PATH"
+exit $EXIT_CODE
 EOF_SCRIPT
   )
 
