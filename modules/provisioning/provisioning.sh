@@ -3,7 +3,6 @@
 # Module: Provisioning - Setup Server Baru
 # Fungsi: Create user devops, SSH keys, sudoers, timezone
 # ============================================================
-set -e
 
 # Load shared libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,11 +15,7 @@ print_banner "Server Provisioning"
 print_section "Configuration"
 
 SERVER_LIST="${1:-servers.txt}"
-
-if [[ ! -f "$SERVER_LIST" ]]; then
-  log_error "File server list tidak ditemukan: $SERVER_LIST"
-  exit 1
-fi
+if [[ ! -f "$SERVER_LIST" ]]; then log_error "File server list tidak ditemukan: $SERVER_LIST"; exit 1; fi
 
 # Show server list
 SERVER_COUNT=$(grep -v '^#' "$SERVER_LIST" | grep -v '^$' | wc -l | xargs)
@@ -46,116 +41,84 @@ echo ""
 echo "  Paste PUBLIC KEY untuk user devops (akhiri dengan ENTER):"
 read -r DEVOPS_PUBKEY
 
-if [[ -z "$DEVOPS_PUBKEY" ]]; then
-  log_error "Public key tidak boleh kosong!"
-  exit 1
-fi
+if [[ -z "$DEVOPS_PUBKEY" ]]; then log_error "Public key tidak boleh kosong!"; exit 1; fi
 
 echo ""
-if ! confirm "Mulai provisioning $SERVER_COUNT server?"; then
-  log_info "Dibatalkan"
-  exit 0
-fi
+if ! confirm "Mulai provisioning $SERVER_COUNT server?"; then log_info "Dibatalkan"; exit 0; fi
 
 # ─── Process Servers ───
 SUCCESS_COUNT=0
 FAIL_COUNT=0
 FAILED_HOSTS=()
 
-# Pre-encode variables locally
-B64_UBUNTU_PASS=$(printf '%s' "$UBUNTU_PASS" | base64 | tr -d '\n')
-B64_DEVOPS_PASS=$(printf '%s' "$DEVOPS_PASS" | base64 | tr -d '\n')
-B64_PUBKEY=$(printf '%s' "$DEVOPS_PUBKEY" | base64 | tr -d '\n')
-
-# Gunakan 'for' agar loop tidak terganggu oleh stdin
+# Gunakan 'for' agar loop stabil
 for HOST in $(grep -v '^#' "$SERVER_LIST" | grep -v '^$'); do
   HOST=$(echo "$HOST" | xargs)
   print_section "Processing: $HOST"
 
-  # Build remote command via Base64
-  REMOTE_SCRIPT_PLAIN=$(
-cat <<EOF_INJECT
-B64_UBUNTU_PASS="${B64_UBUNTU_PASS}"
-B64_DEVOPS_PASS="${B64_DEVOPS_PASS}"
-B64_DEVOPS_PUBKEY="${B64_PUBKEY}"
-VAR_SSH_USER="${SSH_USER}"
-VAR_TIMEZONE="${TIMEZONE}"
-EOF_INJECT
-cat <<'EOF_SCRIPT'
-UBUNTU_PASS_DEC=$(echo "$B64_UBUNTU_PASS" | { base64 -d 2>/dev/null || base64 --decode; })
-DEVOPS_PASS_DEC=$(echo "$B64_DEVOPS_PASS" | { base64 -d 2>/dev/null || base64 --decode; })
-PUBKEY_DEC=$(echo "$B64_DEVOPS_PUBKEY" | { base64 -d 2>/dev/null || base64 --decode; })
-
-SCRIPT_PATH="/tmp/prov_$(date +%s)_$RANDOM.sh"
-cat <<'EOF_ROOT' > "$SCRIPT_PATH"
-set -e
-ARG_DEVOPS_PASS=$1
-ARG_SSH_USER=$2
-ARG_TIMEZONE=$3
-ARG_PUBKEY=$4
-
-mkdir -p /etc/ssh/sshd_config.d
-tee /etc/ssh/sshd_config.d/01-rule.conf >/dev/null <<SSHEOF
+  # Kita suntikkan variabel ke dalam remote command secara langsung (tanpa Base64)
+  # Gunakan single quotes di remote side agar lancar
+  REMOTE_CMD="
+    set -e
+    
+    # ─── Setup SSH Rules ───
+    sudo mkdir -p /etc/ssh/sshd_config.d
+    sudo tee /etc/ssh/sshd_config.d/01-rule.conf >/dev/null << 'EOF_SSHD'
 PasswordAuthentication yes
 PubkeyAuthentication yes
 
-Match User ${ARG_SSH_USER}
+Match User $SSH_USER
     PasswordAuthentication no
     PubkeyAuthentication yes
 
 Match User devops
     PasswordAuthentication yes
     PubkeyAuthentication yes
-SSHEOF
+EOF_SSHD
 
-sshd -t
-systemctl restart ssh || systemctl restart sshd
+    sudo sshd -t
+    sudo systemctl restart ssh || sudo systemctl restart sshd
 
-if id devops >/dev/null 2>&1; then
-    echo "User devops sudah ada"
-else
-    echo "Membuat user devops..."
-    useradd -m -s /bin/bash devops
-done
-echo "devops:${ARG_DEVOPS_PASS}" | chpasswd
+    # ─── Create user devops ───
+    if id devops >/dev/null 2>&1; then
+        echo \"User devops sudah ada\"
+    else
+        echo \"Membuat user devops...\"
+        sudo useradd -m -s /bin/bash devops
+    fi
+     # Force update password
+    echo \"devops:$DEVOPS_PASS\" | sudo chpasswd
 
-usermod -aG sudo devops 2>/dev/null || usermod -aG wheel devops 2>/dev/null || true
-echo "devops ALL=(ALL) NOPASSWD:ALL" | tee /etc/sudoers.d/devops >/dev/null
-chmod 440 /etc/sudoers.d/devops
+    # ─── Sudoers ───
+    sudo usermod -aG sudo devops 2>/dev/null || sudo usermod -aG wheel devops 2>/dev/null || true
+    echo \"devops ALL=(ALL) NOPASSWD:ALL\" | sudo tee /etc/sudoers.d/devops >/dev/null
+    sudo chmod 440 /etc/sudoers.d/devops
 
-install -m 700 -o devops -g devops -d /home/devops/.ssh
-if ! grep -qxF "${ARG_PUBKEY}" /home/devops/.ssh/authorized_keys 2>/dev/null; then
-    echo "${ARG_PUBKEY}" | tee -a /home/devops/.ssh/authorized_keys >/dev/null
-fi
-chown -R devops:devops /home/devops/.ssh
-chmod 600 /home/devops/.ssh/authorized_keys
+    # ─── SSH key setup ───
+    sudo install -m 700 -o devops -g devops -d /home/devops/.ssh
+    if ! sudo grep -qxF \"$DEVOPS_PUBKEY\" /home/devops/.ssh/authorized_keys 2>/dev/null; then
+        echo \"$DEVOPS_PUBKEY\" | sudo tee -a /home/devops/.ssh/authorized_keys >/dev/null
+    fi
+    sudo chown -R devops:devops /home/devops/.ssh
+    sudo chmod 600 /home/devops/.ssh/authorized_keys
 
-if command -v timedatectl >/dev/null 2>&1; then
-    timedatectl set-timezone ${ARG_TIMEZONE}
-else
-    ln -sf /usr/share/zoneinfo/${ARG_TIMEZONE} /etc/localtime
-fi
-echo "✅ Server provisioning selesai"
-EOF_ROOT
+    # ─── Timezone ───
+    if command -v timedatectl >/dev/null 2>&1; then
+        sudo timedatectl set-timezone $TIMEZONE
+    else
+        sudo ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+    fi
 
-chmod +x "$SCRIPT_PATH"
-printf '%s\n' "$UBUNTU_PASS_DEC" | sudo -S -p "" bash "$SCRIPT_PATH" "$DEVOPS_PASS_DEC" "$VAR_SSH_USER" "$VAR_TIMEZONE" "$PUBKEY_DEC"
-EXIT_CODE=$?
-rm -f "$SCRIPT_PATH"
-exit $EXIT_CODE
-EOF_SCRIPT
-  )
+    echo \"✅ Server provisioning selesai\"
+  "
 
-  REMOTE_CMD_B64=$(printf "%s" "$REMOTE_SCRIPT_PLAIN" | base64 | tr -d '\n')
-  REMOTE_CMD="echo '${REMOTE_CMD_B64}' | { base64 -d 2>/dev/null || base64 --decode; } | bash"
-
-  # Execute via smart SSH (isolasikan stdin dengan < /dev/null)
+  # Execute (penting: tambahkan < /dev/null agar SSH tidak mencuri stdin loop)
   if ssh_smart_exec "$SSH_USER" "$HOST" "$SSH_KEY" "$UBUNTU_PASS" "$REMOTE_CMD" < /dev/null; then
     log_ok "🎉 SUCCESS: $HOST"
-    ((SUCCESS_COUNT++))
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
   else
     log_error "❌ FAILED: $HOST"
-    ((FAIL_COUNT++))
+    FAIL_COUNT=$((FAIL_COUNT + 1))
     FAILED_HOSTS+=("$HOST")
   fi
   echo ""
