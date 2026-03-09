@@ -36,6 +36,8 @@
 | 📦 **Server Backup** | Backup konfigurasi server Linux ke MinIO Object Storage |
 | 🖥️ **Provisioning** | Setup server baru (user devops, SSH keys, sudoers, timezone) |
 | ☁️ **Azure DevOps** | Install Azure DevOps Self-Hosted Agent (Auto-Versioning) |
+| 🔄 **MinIO Transfer** | Interactive File/Folder Transfer (Upload, Download, Sync) |
+
 
 
 **Bonus:**
@@ -454,6 +456,24 @@ bash modules/azure/install-agent.sh
 - Install Directory
 
 ---
+
+### 7️⃣ MinIO Transfer (mc-client)
+
+**Fungsi:** Transfer file atau folder secara interaktif antara sistem lokal dan MinIO Object Storage.
+
+**Fitur:**
+- 📥 **Download**: List file di bucket S3 dan download ke lokal.
+- 📤 **Upload**: Validasi file lokal dan upload ke bucket S3.
+- 🔄 **Mirror / Sync**: Sinkronisasi seluruh isi folder ke MinIO menggunakan `mc mirror`.
+- 🛠️ **Auto-Setup**: Otomatis install `mc` dan konfigurasi alias jika belum ada.
+
+**Cara pakai:**
+```bash
+bash modules/minio/transfer.sh
+```
+
+---
+
 
 
 ## 🔌 Menambah Module Baru

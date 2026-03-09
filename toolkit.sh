@@ -36,6 +36,9 @@ show_menu() {
   echo "${CYAN}${BOLD}║${RESET}  ${MAGENTA}${BOLD}AZURE DEVOPS${RESET}                                            ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    9)  Install Azure DevOps Agent                         ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}  ${GREEN}${BOLD}TOOLS${RESET}                                                   ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    10) MinIO Transfer (Upload/Download)                   ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    0)  Exit                                               ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════╝${RESET}"
@@ -69,6 +72,7 @@ while true; do
     7) run_module "backup-server/restore.sh" ;;
     8) run_module "provisioning/provisioning.sh" ;;
     9) run_module "azure/install-agent.sh" ;;
+    10) run_module "minio/transfer.sh" ;;
     0)
       echo ""
       log_ok "Bye! Happy DevOps 🚀"
