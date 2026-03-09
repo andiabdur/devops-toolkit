@@ -131,15 +131,6 @@ fi
 sudo "$SVC_SCRIPT" start
 log_ok "Service started!"
 
-# ─── 7. Optional Workload: MSSQL (As per original script) ───
-if command -v mssql-conf &>/dev/null; then
-  print_section "Workload: MSSQL Config"
-  log_info "Detecting MSSQL, enabling SQL Agent..."
-  sudo /opt/mssql/bin/mssql-conf set sqlagent.enabled true
-  sudo systemctl restart mssql-server
-  log_ok "SQL Agent enabled and MSSQL restarted"
-fi
-
 # ─── Done ───
 echo ""
 print_section "INSTALLATION COMPLETE"

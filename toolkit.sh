@@ -36,10 +36,14 @@ show_menu() {
   echo "${CYAN}${BOLD}║${RESET}  ${MAGENTA}${BOLD}AZURE DEVOPS${RESET}                                            ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    9)  Install Azure DevOps Agent                         ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}  ${YELLOW}${BOLD}DATABASE${RESET}                                                ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    11) Enable SQL Server Agent                            ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}  ${GREEN}${BOLD}TOOLS${RESET}                                                   ${CYAN}${BOLD}║${RESET}"
-  echo "${CYAN}${BOLD}║${RESET}    10) MinIO Transfer (Upload/Download)                   ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    12) MinIO Transfer (Upload/Download)                   ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    0)  Exit                                               ${CYAN}${BOLD}║${RESET}"
+
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════╝${RESET}"
   echo ""
@@ -60,7 +64,7 @@ run_module() {
 # ─── Main Loop ───
 while true; do
   show_menu
-  read -rp "  ${WHITE}${BOLD}Pilih menu [0-8]: ${RESET}" choice
+  read -rp "  ${WHITE}${BOLD}Pilih menu [0-12]: ${RESET}" choice
 
   case $choice in
     1) run_module "kubernetes/install-kubekey.sh" ;;
@@ -72,7 +76,8 @@ while true; do
     7) run_module "backup-server/restore.sh" ;;
     8) run_module "provisioning/provisioning.sh" ;;
     9) run_module "azure/install-agent.sh" ;;
-    10) run_module "minio/transfer.sh" ;;
+    11) run_module "database/enable-sql-agent.sh" ;;
+    12) run_module "minio/transfer.sh" ;;
     0)
       echo ""
       log_ok "Bye! Happy DevOps 🚀"
