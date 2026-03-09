@@ -19,22 +19,12 @@ SERVER_LIST="${1:-servers.txt}"
 
 if [[ ! -f "$SERVER_LIST" ]]; then
   log_error "File server list tidak ditemukan: $SERVER_LIST"
-  log_info "Buat file terlebih dahulu, contoh:"
-  echo "    echo '192.168.1.10' > servers.txt"
-  echo "    echo '192.168.1.11' >> servers.txt"
-  echo ""
-  log_info "Atau jalankan dengan: bash provisioning.sh /path/to/servers.txt"
   exit 1
 fi
 
 # Show server list
-SERVER_COUNT=$(wc -l < "$SERVER_LIST" | xargs)
+SERVER_COUNT=$(grep -v '^#' "$SERVER_LIST" | grep -v '^$' | wc -l | xargs)
 log_info "Server list: $SERVER_LIST ($SERVER_COUNT server)"
-echo ""
-cat "$SERVER_LIST" | while read -r line; do
-  [[ -z "$line" || "$line" =~ ^# ]] && continue
-  echo "    → $line"
-done
 echo ""
 
 read -rp "  SSH User awal [ubuntu]: " SSH_USER
@@ -72,19 +62,17 @@ SUCCESS_COUNT=0
 FAIL_COUNT=0
 FAILED_HOSTS=()
 
-# Pre-encode variables locally to prevent SSH/Shell parsing injection
+# Pre-encode variables locally
 B64_UBUNTU_PASS=$(printf '%s' "$UBUNTU_PASS" | base64 | tr -d '\n')
 B64_DEVOPS_PASS=$(printf '%s' "$DEVOPS_PASS" | base64 | tr -d '\n')
 B64_PUBKEY=$(printf '%s' "$DEVOPS_PUBKEY" | base64 | tr -d '\n')
 
-while IFS= read -r HOST || [[ -n "$HOST" ]]; do
-  # Skip empty lines and comments
-  [[ -z "$HOST" || "$HOST" =~ ^# ]] && continue
+# Gunakan 'for' agar loop tidak terganggu oleh stdin
+for HOST in $(grep -v '^#' "$SERVER_LIST" | grep -v '^$'); do
   HOST=$(echo "$HOST" | xargs)
-
   print_section "Processing: $HOST"
 
-  # Build remote command via Base64 to safely bridge over SSH shell parsing
+  # Build remote command via Base64
   REMOTE_SCRIPT_PLAIN=$(
 cat <<EOF_INJECT
 B64_UBUNTU_PASS="${B64_UBUNTU_PASS}"
@@ -101,15 +89,12 @@ PUBKEY_DEC=$(echo "$B64_DEVOPS_PUBKEY" | { base64 -d 2>/dev/null || base64 --dec
 SCRIPT_PATH="/tmp/prov_$(date +%s)_$RANDOM.sh"
 cat <<'EOF_ROOT' > "$SCRIPT_PATH"
 set -e
-
 ARG_DEVOPS_PASS=$1
 ARG_SSH_USER=$2
 ARG_TIMEZONE=$3
 ARG_PUBKEY=$4
 
-# ─── SSH Config ───
 mkdir -p /etc/ssh/sshd_config.d
-
 tee /etc/ssh/sshd_config.d/01-rule.conf >/dev/null <<SSHEOF
 PasswordAuthentication yes
 PubkeyAuthentication yes
@@ -126,38 +111,30 @@ SSHEOF
 sshd -t
 systemctl restart ssh || systemctl restart sshd
 
-# ─── Create user devops ───
 if id devops >/dev/null 2>&1; then
     echo "User devops sudah ada"
 else
     echo "Membuat user devops..."
     useradd -m -s /bin/bash devops
-    echo "devops:${ARG_DEVOPS_PASS}" | chpasswd
-fi
+done
+echo "devops:${ARG_DEVOPS_PASS}" | chpasswd
 
-# ─── Sudoers ───
 usermod -aG sudo devops 2>/dev/null || usermod -aG wheel devops 2>/dev/null || true
 echo "devops ALL=(ALL) NOPASSWD:ALL" | tee /etc/sudoers.d/devops >/dev/null
 chmod 440 /etc/sudoers.d/devops
-visudo -cf /etc/sudoers.d/devops
 
-# ─── SSH key setup ───
 install -m 700 -o devops -g devops -d /home/devops/.ssh
-
 if ! grep -qxF "${ARG_PUBKEY}" /home/devops/.ssh/authorized_keys 2>/dev/null; then
     echo "${ARG_PUBKEY}" | tee -a /home/devops/.ssh/authorized_keys >/dev/null
 fi
-
 chown -R devops:devops /home/devops/.ssh
 chmod 600 /home/devops/.ssh/authorized_keys
 
-# ─── Timezone ───
 if command -v timedatectl >/dev/null 2>&1; then
     timedatectl set-timezone ${ARG_TIMEZONE}
 else
     ln -sf /usr/share/zoneinfo/${ARG_TIMEZONE} /etc/localtime
 fi
-
 echo "✅ Server provisioning selesai"
 EOF_ROOT
 
@@ -172,7 +149,7 @@ EOF_SCRIPT
   REMOTE_CMD_B64=$(printf "%s" "$REMOTE_SCRIPT_PLAIN" | base64 | tr -d '\n')
   REMOTE_CMD="echo '${REMOTE_CMD_B64}' | { base64 -d 2>/dev/null || base64 --decode; } | bash"
 
-  # Execute via smart SSH (try key, fallback password)
+  # Execute via smart SSH (isolasikan stdin dengan < /dev/null)
   if ssh_smart_exec "$SSH_USER" "$HOST" "$SSH_KEY" "$UBUNTU_PASS" "$REMOTE_CMD" < /dev/null; then
     log_ok "🎉 SUCCESS: $HOST"
     ((SUCCESS_COUNT++))
@@ -181,17 +158,13 @@ EOF_SCRIPT
     ((FAIL_COUNT++))
     FAILED_HOSTS+=("$HOST")
   fi
-
   echo ""
-done < "$SERVER_LIST"
+done
 
-# ─── Summary ───
+# Summary
 print_section "Summary"
-
 log_ok "Success: $SUCCESS_COUNT server"
 if [[ $FAIL_COUNT -gt 0 ]]; then
   log_error "Failed: $FAIL_COUNT server"
-  for h in "${FAILED_HOSTS[@]}"; do
-    echo "    ❌ $h"
-  done
+  for h in "${FAILED_HOSTS[@]}"; do echo "    ❌ $h"; done
 fi

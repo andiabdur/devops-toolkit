@@ -19,18 +19,12 @@ SERVER_LIST="${1:-servers.txt}"
 
 if [[ ! -f "$SERVER_LIST" ]]; then
   log_error "File server list tidak ditemukan: $SERVER_LIST"
-  log_info "Gunakan file 'servers.txt' di folder root toolkit."
   exit 1
 fi
 
 # Show server list
-SERVER_COUNT=$(wc -l < "$SERVER_LIST" | xargs)
+SERVER_COUNT=$(grep -v '^#' "$SERVER_LIST" | grep -v '^$' | wc -l | xargs)
 log_info "Server list: $SERVER_LIST ($SERVER_COUNT server)"
-echo ""
-cat "$SERVER_LIST" | while read -r line; do
-  [[ -z "$line" || "$line" =~ ^# ]] && continue
-  echo "    → $line"
-done
 echo ""
 
 read -rp "  SSH User awal [ubuntu]: " SSH_USER
@@ -56,11 +50,9 @@ FAILED_HOSTS=()
 # Pre-encode variables locally
 B64_UBUNTU_PASS=$(printf '%s' "$UBUNTU_PASS" | base64 | tr -d '\n')
 
-while IFS= read -r HOST || [[ -n "$HOST" ]]; do
-  # Skip empty lines and comments
-  [[ -z "$HOST" || "$HOST" =~ ^# ]] && continue
+# Gunakan 'for' agar loop tidak terganggu oleh stdin
+for HOST in $(grep -v '^#' "$SERVER_LIST" | grep -v '^$'); do
   HOST=$(echo "$HOST" | xargs)
-
   print_section "Processing: $HOST"
 
   # Build remote command via Base64
@@ -74,7 +66,6 @@ UBUNTU_PASS_DEC=$(echo "$B64_UBUNTU_PASS" | { base64 -d 2>/dev/null || base64 --
 SCRIPT_PATH="/tmp/k8s_deps_$(date +%s)_$RANDOM.sh"
 cat <<'EOF_ROOT' > "$SCRIPT_PATH"
 set -e
-
 echo "[INFO] Detecting OS and installing dependencies..."
 
 if command -v apt-get >/dev/null 2>&1; then
@@ -87,8 +78,7 @@ else
     echo "❌ OS tidak didukung (hanya apt/yum)"
     exit 1
 fi
-
-echo "✅ Dependencies (socat, conntrack, ipset, ipvsadm, ebtables, jq, curl) terinstall."
+echo "✅ Dependencies terinstall."
 EOF_ROOT
 
 chmod +x "$SCRIPT_PATH"
@@ -102,7 +92,7 @@ EOF_SCRIPT
   REMOTE_CMD_B64=$(printf "%s" "$REMOTE_SCRIPT_PLAIN" | base64 | tr -d '\n')
   REMOTE_CMD="echo '${REMOTE_CMD_B64}' | { base64 -d 2>/dev/null || base64 --decode; } | bash"
 
-  # Execute via smart SSH dengan isolasi stdin yang ketat
+  # Execute via smart SSH (isolasikan stdin dengan < /dev/null)
   if ssh_smart_exec "$SSH_USER" "$HOST" "$SSH_KEY" "$UBUNTU_PASS" "$REMOTE_CMD" < /dev/null; then
     log_ok "🎉 SUCCESS: $HOST"
     ((SUCCESS_COUNT++))
@@ -111,17 +101,13 @@ EOF_SCRIPT
     ((FAIL_COUNT++))
     FAILED_HOSTS+=("$HOST")
   fi
-
   echo ""
-done < "$SERVER_LIST"
+done
 
-# ─── Summary ───
+# Summary
 print_section "Summary"
-
 log_ok "Success: $SUCCESS_COUNT server"
 if [[ $FAIL_COUNT -gt 0 ]]; then
   log_error "Failed: $FAIL_COUNT server"
-  for h in "${FAILED_HOSTS[@]}"; do
-    echo "    ❌ $h"
-  done
+  for h in "${FAILED_HOSTS[@]}"; do echo "    ❌ $h"; done
 fi
