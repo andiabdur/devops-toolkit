@@ -33,7 +33,7 @@ print_section "Available Backups"
 SOURCE_DIR="${MINIO_ALIAS}/${MINIO_BUCKET}/${MINIO_PREFIX}/"
 log_info "Listing backups in ${SOURCE_DIR}:"
 echo ""
-"$MC_BIN" ls "$SOURCE_DIR" 2>/dev/null || {
+"$MC_CMD" ls "$SOURCE_DIR" 2>/dev/null || {
   log_error "Tidak bisa membaca backup list"
   exit 1
 }

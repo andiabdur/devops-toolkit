@@ -13,6 +13,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 # ─── Default config ───
 MC_BIN="/usr/local/bin/mc"
 MC_URL="https://dl.min.io/client/mc/release/linux-amd64/mc"
+# Gunakan config dir di home user agar tidak bentrok dengan root saat pakai sudo
+MC_CONFIG_DIR="$HOME/.mc"
+MC_CMD="$MC_BIN --config-dir $MC_CONFIG_DIR"
 
 # ─── Install MinIO Client jika belum ada ───
 ensure_mc_installed() {
@@ -55,10 +58,10 @@ setup_minio_alias() {
 
   local need_config=false
 
-  if "$MC_BIN" alias ls 2>/dev/null | awk '{print $1}' | grep -qx "${alias_name}"; then
+  if "$MC_CMD" alias ls 2>/dev/null | awk '{print $1}' | grep -qx "${alias_name}"; then
     log_info "Alias '${alias_name}' exists, testing connection..."
 
-    if "$MC_BIN" ls "${alias_name}" >/dev/null 2>&1; then
+    if "$MC_CMD" ls "${alias_name}" >/dev/null 2>&1; then
       log_ok "MinIO credential valid"
     else
       log_warn "Alias exists but credential INVALID"
@@ -78,7 +81,7 @@ setup_minio_alias() {
     read -rsp "  MinIO Secret Key : " secret_key
     echo ""
 
-    "$MC_BIN" alias set \
+    "$MC_CMD" alias set \
       "$alias_name" \
       "$endpoint" \
       "$access_key" \
@@ -95,11 +98,11 @@ ensure_bucket() {
 
   log_info "Checking bucket '${bucket_path}'..."
 
-  if "$MC_BIN" ls "${bucket_path}" >/dev/null 2>&1; then
+  if "$MC_CMD" ls "${bucket_path}" >/dev/null 2>&1; then
     log_ok "Bucket exists"
   else
     log_info "Creating bucket..."
-    "$MC_BIN" mb "${bucket_path}"
+    "$MC_CMD" mb "${bucket_path}"
     log_ok "Bucket created"
   fi
 }
@@ -110,9 +113,22 @@ minio_upload() {
   local local_file="$1"
   local target="$2"
 
+  # Pastikan config dir ada dan writable oleh user saat ini
+  mkdir -p "$MC_CONFIG_DIR"
+  chmod 700 "$MC_CONFIG_DIR"
+
+  if [[ ! -f "$local_file" ]]; then
+    log_error "File tidak ditemukan untuk diupload: $local_file"
+    exit 1
+  fi
+
   log_info "Uploading to MinIO: ${target}"
-  "$MC_BIN" cp "$local_file" "${target}"
-  log_ok "Upload success!"
+  if "$MC_CMD" cp "$local_file" "${target}"; then
+    log_ok "Upload success!"
+  else
+    log_error "Gagal upload ke MinIO. Cek koneksi atau kuota storage."
+    exit 1
+  fi
 }
 
 # ─── Download file dari MinIO ───
@@ -122,6 +138,6 @@ minio_download() {
   local local_path="$2"
 
   log_info "Downloading from MinIO..."
-  "$MC_BIN" cp "$source" "$local_path"
+  "$MC_CMD" cp "$source" "$local_path"
   log_ok "Download complete: $local_path"
 }
