@@ -82,12 +82,23 @@ print_section "Creating Backup"
 
 log_info "Creating archive: $BACKUP_NAME"
 
-tar -czf "$BACKUP_PATH" \
+# Use sudo for tar as it might need to read protected files (/etc/hosts, etc.)
+# and write to restricted /tmp
+sudo tar -czf "$BACKUP_PATH" \
   "${EXCLUDE_PARAMS[@]}" \
   "${BACKUP_SOURCES[@]}" 2>/dev/null || {
-    log_error "Gagal membuat archive"
-    exit 1
+    log_warn "Beberapa file mungkin gagal dibaca, mencoba tanpa sembunyikan error..."
+    sudo tar -czf "$BACKUP_PATH" \
+      "${EXCLUDE_PARAMS[@]}" \
+      "${BACKUP_SOURCES[@]}" || {
+        log_error "Gagal membuat archive"
+        exit 1
+      }
   }
+
+# Change ownership so current user can read and upload
+sudo chown $(id -u):$(id -g) "$BACKUP_PATH"
+log_ok "Ownership adjusted for MinIO upload"
 
 BACKUP_SIZE=$(du -sh "$BACKUP_PATH" | awk '{print $1}')
 log_ok "Backup created: $BACKUP_PATH ($BACKUP_SIZE)"
