@@ -13,9 +13,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 # ─── Default config ───
 MC_BIN="/usr/local/bin/mc"
 MC_URL="https://dl.min.io/client/mc/release/linux-amd64/mc"
-# Gunakan config dir di home user agar tidak bentrok dengan root saat pakai sudo
-MC_CONFIG_DIR="$HOME/.mc"
-MC_CMD="$MC_BIN --config-dir $MC_CONFIG_DIR"
+MC_CMD="$MC_BIN"
 
 # ─── Install MinIO Client jika belum ada ───
 ensure_mc_installed() {
@@ -112,10 +110,6 @@ ensure_bucket() {
 minio_upload() {
   local local_file="$1"
   local target="$2"
-
-  # Pastikan config dir ada dan writable oleh user saat ini
-  mkdir -p "$MC_CONFIG_DIR"
-  chmod 700 "$MC_CONFIG_DIR"
 
   if [[ ! -f "$local_file" ]]; then
     log_error "File tidak ditemukan untuk diupload: $local_file"
