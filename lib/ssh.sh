@@ -18,7 +18,9 @@ test_ssh_key() {
   local host="$2"
   local key="$3"
 
-  ssh -o BatchMode=yes -o ConnectTimeout=5 -i "$key" "${user}@${host}" "echo ok" >/dev/null 2>&1
+  # -n redirects stdin from /dev/null, -o BatchMode=yes prevents password prompts
+  ssh -n -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no \
+    -i "$key" "${user}@${host}" "echo ok" >/dev/null 2>&1
   return $?
 }
 
@@ -30,7 +32,11 @@ ssh_exec_key() {
   local key="$3"
   local cmd="$4"
 
-  ssh -i "$key" -o StrictHostKeyChecking=no "${user}@${host}" "$cmd" < /dev/null
+  # -n prevents stealing stdin from while loops
+  # -T disables pseudo-terminal allocation for clean command output
+  ssh -n -T -i "$key" -o StrictHostKeyChecking=no \
+    -o ConnectTimeout=15 \
+    "${user}@${host}" "$cmd" 2>&1
 }
 
 # ─── Execute remote command via SSH (password-based) ───
@@ -54,11 +60,13 @@ ssh_exec_pass() {
     log_ok "sshpass installed successfully"
   fi
 
-  SSHPASS="$password" sshpass -e ssh \
+  # -n prevents stealing stdin from while loops
+  SSHPASS="$password" sshpass -e ssh -n -T \
     -o StrictHostKeyChecking=no \
     -o PreferredAuthentications=password \
     -o PubkeyAuthentication=no \
-    "${user}@${host}" "$cmd" < /dev/null
+    -o ConnectTimeout=15 \
+    "${user}@${host}" "$cmd" 2>&1
 }
 
 # ─── Smart SSH exec: try key first, fallback to password ───

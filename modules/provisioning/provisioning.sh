@@ -32,6 +32,7 @@ SERVER_COUNT=$(wc -l < "$SERVER_LIST" | xargs)
 log_info "Server list: $SERVER_LIST ($SERVER_COUNT server)"
 echo ""
 cat "$SERVER_LIST" | while read -r line; do
+  [[ -z "$line" || "$line" =~ ^# ]] && continue
   echo "    → $line"
 done
 echo ""
@@ -76,7 +77,7 @@ B64_UBUNTU_PASS=$(printf '%s' "$UBUNTU_PASS" | base64 | tr -d '\n')
 B64_DEVOPS_PASS=$(printf '%s' "$DEVOPS_PASS" | base64 | tr -d '\n')
 B64_PUBKEY=$(printf '%s' "$DEVOPS_PUBKEY" | base64 | tr -d '\n')
 
-while IFS= read -u 9 -r HOST || [[ -n "$HOST" ]]; do
+while IFS= read -r HOST || [[ -n "$HOST" ]]; do
   # Skip empty lines and comments
   [[ -z "$HOST" || "$HOST" =~ ^# ]] && continue
   HOST=$(echo "$HOST" | xargs)
@@ -172,7 +173,7 @@ EOF_SCRIPT
   REMOTE_CMD="echo '${REMOTE_CMD_B64}' | { base64 -d 2>/dev/null || base64 --decode; } | bash"
 
   # Execute via smart SSH (try key, fallback password)
-  if ssh_smart_exec "$SSH_USER" "$HOST" "$SSH_KEY" "$UBUNTU_PASS" "$REMOTE_CMD"; then
+  if ssh_smart_exec "$SSH_USER" "$HOST" "$SSH_KEY" "$UBUNTU_PASS" "$REMOTE_CMD" < /dev/null; then
     log_ok "🎉 SUCCESS: $HOST"
     ((SUCCESS_COUNT++))
   else
@@ -182,7 +183,7 @@ EOF_SCRIPT
   fi
 
   echo ""
-done 9< "$SERVER_LIST"
+done < "$SERVER_LIST"
 
 # ─── Summary ───
 print_section "Summary"
