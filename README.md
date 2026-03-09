@@ -35,6 +35,8 @@
 | 💾 **Velero Backup** | Backup & restore namespace Kubernetes via Velero + MinIO |
 | 📦 **Server Backup** | Backup konfigurasi server Linux ke MinIO Object Storage |
 | 🖥️ **Provisioning** | Setup server baru (user devops, SSH keys, sudoers, timezone) |
+| ☁️ **Azure DevOps** | Install Azure DevOps Self-Hosted Agent (Auto-Versioning) |
+
 
 **Bonus:**
 - 🎨 Output berwarna dan rapi (logging terstruktur)
@@ -71,6 +73,9 @@ devops-toolkit/
 │   └── provisioning/
 │       ├── provisioning.sh            #   Setup server baru
 │       └── servers.txt.example        #   Template server list
+│
+│   └── azure/
+│       └── install-agent.sh           #   Install Azure DevOps Agent
 │
 ├── docs/
 │   └── CONTRIBUTING.md                # Cara tambah module baru
@@ -120,6 +125,9 @@ Kamu akan melihat menu interaktif seperti ini:
 ║                                                          ║
 ║  PROVISIONING                                            ║
 ║    8)  Provisioning Server Baru                           ║
+║                                                          ║
+║  AZURE DEVOPS                                            ║
+║    9)  Install Azure DevOps Agent                         ║
 ║                                                          ║
 ║    0)  Exit                                               ║
 ║                                                          ║
@@ -423,6 +431,31 @@ bash modules/provisioning/provisioning.sh /path/to/custom-servers.txt
 
 ---
 
+### 6️⃣ Azure DevOps Agent
+
+**Fungsi:** Install Azure DevOps Self-Hosted Agent pada Linux (Ubuntu/Debian/CentOS).
+
+**Fitur Unggulan:**
+- 🤖 **Auto-Version Discovery**: Otomatis mencari versi agent terbaru via GitHub API.
+- 🏗️ **Architecture Detection**: Otomatis mendeteksi arsitektur mesin (x64 / ARM64).
+- 🔄 **Service Auto-Setup**: Otomatis mendaftarkan agent sebagai systemd service (`svc.sh`).
+- 🛢️ **Workload Logic**: Menjalankan konfigurasi tambahan (opsional) seperti MySQL Agent.
+
+**Cara pakai:**
+```bash
+bash modules/azure/install-agent.sh
+```
+
+**Yang ditanya:**
+- Azure DevOps Org URL
+- Personal Access Token (PAT)
+- Agent Pool Name
+- Agent Name
+- Install Directory
+
+---
+
+
 ## 🔌 Menambah Module Baru
 
 Mau nambahin automation script lain? Gampang banget:
@@ -553,10 +586,11 @@ Repo ini merupakan konsolidasi dari 4 repo terpisah:
 - ✅ Preview backup sebelum restore (server config)
 - ✅ Menghilangkan `eval` berbahaya di provisioning
 - ✅ Configurable parameter (tidak hardcoded)
-- ✅ Auto-detect architecture untuk MinIO Client
+- ✅ Auto-detect architecture untuk MinIO dan Azure Agent
 - ✅ Timezone menggunakan `timedatectl` jika tersedia
 - ✅ Typo fix: "Valero" → "Velero"
 - ✅ Timestamp konsisten (YYYYMMDD)
+- ✅ **New Module**: Azure DevOps Agent Installer (Auto-Versioning)
 
 ---
 
