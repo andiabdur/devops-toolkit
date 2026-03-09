@@ -32,9 +32,10 @@ show_menu() {
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}  ${BLUE}${BOLD}PROVISIONING${RESET}                                           ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    8)  Provisioning Server Baru                           ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    9)  Install K8s Dependencies (socat, etc.)            ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}  ${MAGENTA}${BOLD}AZURE DEVOPS${RESET}                                            ${CYAN}${BOLD}║${RESET}"
-  echo "${CYAN}${BOLD}║${RESET}    9)  Install Azure DevOps Agent                         ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    10) Install Azure DevOps Agent                         ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}  ${YELLOW}${BOLD}DATABASE${RESET}                                                ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    11) Enable SQL Server Agent                            ${CYAN}${BOLD}║${RESET}"
@@ -75,7 +76,8 @@ while true; do
     6) run_module "backup-server/backup.sh" ;;
     7) run_module "backup-server/restore.sh" ;;
     8) run_module "provisioning/provisioning.sh" ;;
-    9) run_module "azure/install-agent.sh" ;;
+    9) run_module "provisioning/install-k8s-deps.sh" ;;
+    10) run_module "azure/install-agent.sh" ;;
     11) run_module "database/enable-sql-agent.sh" ;;
     12) run_module "minio/transfer.sh" ;;
     0)

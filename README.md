@@ -29,7 +29,7 @@
 | 📊 **KubeSphere** | Install KubeSphere Dashboard v4.1.3 via Helm |
 | 💾 **Velero Backup** | Backup & restore namespace Kubernetes via Velero + MinIO |
 | 📦 **Server Backup** | Backup konfigurasi server Linux ke MinIO Object Storage |
-| 🖥️ **Provisioning** | Setup server baru (user devops, SSH keys, sudoers, timezone) |
+| 🖥️ **Provisioning** | Setup server (user devops) & Install K8s Dependencies |
 | ☁️ **Azure DevOps** | Install Azure DevOps Self-Hosted Agent (Auto-Versioning) |
 | 🛢️ **Database** | Aktivasi SQL Server Agent (2017+) pada Linux |
 | 🔄 **MinIO Transfer** | Interactive File/Folder Transfer (Upload, Download, Sync) |
@@ -68,6 +68,7 @@ devops-toolkit/
 │   │
 │   ├── provisioning/
 │   │   ├── provisioning.sh            #   Setup server baru
+│   │   ├── install-k8s-deps.sh        #   Install deps (socat, etc.) massal
 │   │   └── servers.txt.example        #   Template server list
 │   │
 │   ├── azure/
@@ -122,9 +123,10 @@ Kamu akan melihat menu interaktif seperti ini:
 ║                                                          ║
 ║  PROVISIONING                                            ║
 ║    8)  Provisioning Server Baru                           ║
+║    9)  Install K8s Dependencies (socat, etc.)            ║
 ║                                                          ║
 ║  AZURE DEVOPS                                            ║
-║    9)  Install Azure DevOps Agent                         ║
+║    10) Install Azure DevOps Agent                         ║
 ║                                                          ║
 ║  DATABASE                                                ║
 ║    11) Enable SQL Server Agent                            ║
@@ -172,7 +174,9 @@ Backup & restore namespace Kubernetes via Velero + MinIO S3.
 Backup konfigurasi server (`/home/devops`, `/etc/hosts`, dll) ke MinIO.
 
 ### 5️⃣ Server Provisioning
-Setup server baru secara batch (user devops, sudoers, ssh keys, timezone).
+Mendukung setup server masal:
+- **Setup User & SSH**: Create user devops, sudoers, ssh keys, timezone.
+- **Install K8s Dependencies**: Install socat, conntrack, ipset, ipvsadm, ebtables secara sekaligus di banyak server.
 
 ### 6️⃣ Azure DevOps Agent
 Install Azure DevOps Self-Hosted Agent dengan fitur **Auto-Version Discovery** dan **Auto-Service Setup**.
@@ -191,6 +195,7 @@ Transfer file/folder interaktif (Upload, Download, Sync) antara Local dan MinIO.
 - ✅ **New Module**: Azure DevOps Agent Installer
 - ✅ **New Module**: SQL Server Agent Enabler
 - ✅ **New Module**: MinIO Transfer Tool
+- ✅ **New Module**: Kubernetes Dependencies Installer (Mass Install)
 - ✅ Auto-detect architecture untuk semua downloads
 
 ---
