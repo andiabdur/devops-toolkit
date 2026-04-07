@@ -11,6 +11,16 @@ source "$SCRIPT_DIR/../../lib/common.sh"
 
 print_banner "Promtail Installer (Loki Client)"
 
+# ─── 0. Prerequisites ───
+if ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
+  log_info "Installing prerequisites (jq, curl)..."
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get update -yqq && sudo apt-get install -y jq curl unzip
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y epel-release && sudo yum install -y jq curl unzip
+  fi
+fi
+
 # ─── 1. Check Existing Service ───
 print_section "Checking Existing Install"
 
@@ -76,13 +86,6 @@ if [[ "$DO_UPGRADE" == "true" ]]; then
 
   print_section "Installing Promtail v$CLEAN_VERSION"
   
-  # Prerequisites
-  if command -v apt-get &>/dev/null; then
-    sudo apt-get update -yqq && sudo apt-get install -y unzip curl
-  elif command -v yum &>/dev/null; then
-    sudo yum install -y unzip curl
-  fi
-
   BINARY_NAME="promtail-linux-${ARCH}"
   ZIP_NAME="${BINARY_NAME}.zip"
   DOWNLOAD_URL="https://github.com/grafana/loki/releases/download/v${CLEAN_VERSION}/${ZIP_NAME}"
