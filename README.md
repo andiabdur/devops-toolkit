@@ -32,6 +32,7 @@
 | 🖥️ **Provisioning** | Setup server (user devops) & Install K8s Dependencies |
 | ☁️ **Azure DevOps** | Install Azure DevOps Self-Hosted Agent (Auto-Versioning) |
 | 🛢️ **Database** | Aktivasi SQL Server Agent (2017+) pada Linux |
+| 📊 **Monitoring** | Install Promtail (Loki Client) l Log Shipper |
 | 🔄 **MinIO Transfer** | Interactive File/Folder Transfer (Upload, Download, Sync) |
 
 **Bonus:**
@@ -76,7 +77,10 @@ devops-toolkit/
 │   │
 │   ├── database/
 │   │   └── enable-sql-agent.sh        #   Enable SQL Server Agent
-│   │
+│
+│   ├── monitoring/
+│   │   └── install-promtail.sh        #   Install Promtail
+│
 │   └── minio/
 │       └── transfer.sh                #   Interactive upload/download
 ```
@@ -130,9 +134,13 @@ Kamu akan melihat menu interaktif seperti ini:
 ║                                                          ║
 ║  DATABASE                                                ║
 ║    11) Enable SQL Server Agent                            ║
+║    12) Install sqlpackage (DAC Utility)                   ║
+║                                                          ║
+║  MONITORING                                              ║
+║    13) Install Promtail (Loki Client)                     ║
 ║                                                          ║
 ║  TOOLS                                                   ║
-║    12) MinIO Transfer (Upload/Download)                   ║
+║    14) MinIO Transfer (Upload/Download)                   ║
 ║                                                          ║
 ║    0)  Exit                                               ║
 ║                                                          ║
@@ -194,6 +202,7 @@ Transfer file/folder interaktif (Upload, Download, Sync) antara Local dan MinIO.
 - ✅ KubeKey support SSH Key auth
 - ✅ **New Module**: Azure DevOps Agent Installer
 - ✅ **New Module**: SQL Server Agent Enabler
+- ✅ **New Module**: Promtail Installer (Loki Client)
 - ✅ **New Module**: MinIO Transfer Tool
 - ✅ **New Module**: Kubernetes Dependencies Installer (Mass Install)
 - ✅ Auto-detect architecture untuk semua downloads

@@ -41,8 +41,11 @@ show_menu() {
   echo "${CYAN}${BOLD}║${RESET}    11) Enable SQL Server Agent                            ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    12) Install sqlpackage (DAC Utility)                   ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}  ${MAGENTA}${BOLD}MONITORING${RESET}                                              ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    13) Install Promtail (Loki Client)                     ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}  ${GREEN}${BOLD}TOOLS${RESET}                                                   ${CYAN}${BOLD}║${RESET}"
-  echo "${CYAN}${BOLD}║${RESET}    13) MinIO Transfer (Upload/Download)                   ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    14) MinIO Transfer (Upload/Download)                   ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    0)  Exit                                               ${CYAN}${BOLD}║${RESET}"
 
@@ -66,7 +69,7 @@ run_module() {
 # ─── Main Loop ───
 while true; do
   show_menu
-  read -rp "  ${WHITE}${BOLD}Pilih menu [0-13]: ${RESET}" choice
+  read -rp "  ${WHITE}${BOLD}Pilih menu [0-14]: ${RESET}" choice
 
   case $choice in
     1) run_module "kubernetes/install-kubekey.sh" ;;
@@ -81,7 +84,8 @@ while true; do
     10) run_module "azure/install-agent.sh" ;;
     11) run_module "database/enable-sql-agent.sh" ;;
     12) run_module "database/install-sqlpackage.sh" ;;
-    13) run_module "minio/transfer.sh" ;;
+    13) run_module "monitoring/install-promtail.sh" ;;
+    14) run_module "minio/transfer.sh" ;;
     0)
       echo ""
       log_ok "Bye! Happy DevOps 🚀"
