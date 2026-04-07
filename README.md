@@ -32,7 +32,7 @@
 | 🖥️ **Provisioning** | Setup server (user devops) & Install K8s Dependencies |
 | ☁️ **Azure DevOps** | Install Azure DevOps Self-Hosted Agent (Auto-Versioning) |
 | 🛢️ **Database** | Aktivasi SQL Server Agent (2017+) pada Linux |
-| 📊 **Monitoring** | Install Prometheus, Loki, Promtail, Node Exporter |
+| 📊 **Monitoring** | Install Prometheus, Loki, Promtail, Node/Nginx Exporter |
 | 🔄 **MinIO Transfer** | Interactive File/Folder Transfer (Upload, Download, Sync) |
 
 **Bonus:**
@@ -75,14 +75,12 @@ devops-toolkit/
 │   ├── azure/
 │   │   └── install-agent.sh           #   Install Azure DevOps Agent
 │   │
-│   ├── database/
-│   │   └── enable-sql-agent.sh        #   Enable SQL Server Agent
-│
 │   ├── monitoring/
 │   │   ├── install-prometheus.sh      #   Install Prometheus Server
 │   │   ├── install-loki.sh            #   Install Loki Server
 │   │   ├── install-promtail.sh        #   Install Promtail (Client)
-│   │   └── install-node-exporter.sh    #   Install Node Exporter
+│   │   ├── install-node-exporter.sh    #   Install Node Exporter
+│   │   └── install-nginx-exporter.sh   #   Install Nginx Exporter
 │
 │   └── minio/
 │       └── transfer.sh                #   Interactive upload/download
@@ -144,9 +142,10 @@ Kamu akan melihat menu interaktif seperti ini:
 ║    14) Install Loki Server                                ║
 ║    15) Install Promtail (Loki Client)                     ║
 ║    16) Install Node Exporter                              ║
+║    17) Install Nginx Exporter                             ║
 ║                                                          ║
 ║  TOOLS                                                   ║
-║    17) MinIO Transfer (Upload/Download)                   ║
+║    18) MinIO Transfer (Upload/Download)                   ║
 ║                                                          ║
 ║    0)  Exit                                               ║
 ║                                                          ║
@@ -214,6 +213,7 @@ Transfer file/folder interaktif (Upload, Download, Sync) antara Local dan MinIO.
 - ✅ **New Module**: Loki Server Installer
 - ✅ **New Module**: Promtail Installer (Loki Client)
 - ✅ **New Module**: Node Exporter Installer
+- ✅ **New Module**: Nginx Exporter Installer (Auto Stub Status)
 - ✅ Auto-detect architecture untuk semua downloads
 
 ---

@@ -46,9 +46,10 @@ show_menu() {
   echo "${CYAN}${BOLD}║${RESET}    14) Install Loki Server                                ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    15) Install Promtail (Loki Client)                     ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    16) Install Node Exporter                              ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    17) Install Nginx Exporter                             ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}  ${GREEN}${BOLD}TOOLS${RESET}                                                   ${CYAN}${BOLD}║${RESET}"
-  echo "${CYAN}${BOLD}║${RESET}    17) MinIO Transfer (Upload/Download)                   ${CYAN}${BOLD}║${RESET}"
+  echo "${CYAN}${BOLD}║${RESET}    18) MinIO Transfer (Upload/Download)                   ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}                                                          ${CYAN}${BOLD}║${RESET}"
   echo "${CYAN}${BOLD}║${RESET}    0)  Exit                                               ${CYAN}${BOLD}║${RESET}"
 
@@ -72,7 +73,7 @@ run_module() {
 # ─── Main Loop ───
 while true; do
   show_menu
-  read -rp "  ${WHITE}${BOLD}Pilih menu [0-17]: ${RESET}" choice
+  read -rp "  ${WHITE}${BOLD}Pilih menu [0-18]: ${RESET}" choice
 
   case $choice in
     1) run_module "kubernetes/install-kubekey.sh" ;;
@@ -91,7 +92,8 @@ while true; do
     14) run_module "monitoring/install-loki.sh" ;;
     15) run_module "monitoring/install-promtail.sh" ;;
     16) run_module "monitoring/install-node-exporter.sh" ;;
-    17) run_module "minio/transfer.sh" ;;
+    17) run_module "monitoring/install-nginx-exporter.sh" ;;
+    18) run_module "minio/transfer.sh" ;;
     0)
       echo ""
       log_ok "Bye! Happy DevOps 🚀"
