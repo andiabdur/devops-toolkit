@@ -108,8 +108,15 @@ fi
 # ─── 4. Input Detail Loki ───
 print_section "Loki Configuration"
 
-read -rp "  Loki Server URL [http://loki.internal:3100/loki/api/v1/push]: " LOKI_URL
-LOKI_URL=${LOKI_URL:-http://loki.internal:3100/loki/api/v1/push}
+read -rp "  Loki Server IP/Hostname [127.0.0.1]: " LOKI_HOST
+LOKI_HOST=${LOKI_HOST:-127.0.0.1}
+
+read -rp "  Loki Port [3100]: " LOKI_PORT
+LOKI_PORT=${LOKI_PORT:-3100}
+
+# Construct full push URL
+LOKI_URL="http://${LOKI_HOST}:${LOKI_PORT}/loki/api/v1/push"
+LOKI_BASE="http://${LOKI_HOST}:${LOKI_PORT}"
 
 read -rp "  Server Name (Label untuk Grafana) [$(hostname)]: " SERVER_NAME
 SERVER_NAME=${SERVER_NAME:-$(hostname)}
@@ -197,7 +204,7 @@ else
 fi
 
 # Check 2: Connectivity to Loki
-LOKI_BASE=$(echo "$LOKI_URL" | sed 's/\/loki\/api\/v1\/push//')
+log_info "Checking connectivity to $LOKI_BASE ..."
 if curl -s --connect-timeout 5 "$LOKI_BASE/ready" | grep -q "ready"; then
   log_ok "Loki Server is READY"
 else
