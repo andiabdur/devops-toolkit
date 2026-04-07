@@ -32,7 +32,7 @@
 | 🖥️ **Provisioning** | Setup server (user devops) & Install K8s Dependencies |
 | ☁️ **Azure DevOps** | Install Azure DevOps Self-Hosted Agent (Auto-Versioning) |
 | 🛢️ **Database** | Aktivasi SQL Server Agent (2017+) pada Linux |
-| 📊 **Monitoring** | Install Promtail (Loki Client) l Log Shipper |
+| 📊 **Monitoring** | Install Prometheus, Loki, Promtail, Node Exporter |
 | 🔄 **MinIO Transfer** | Interactive File/Folder Transfer (Upload, Download, Sync) |
 
 **Bonus:**
@@ -79,7 +79,10 @@ devops-toolkit/
 │   │   └── enable-sql-agent.sh        #   Enable SQL Server Agent
 │
 │   ├── monitoring/
-│   │   └── install-promtail.sh        #   Install Promtail
+│   │   ├── install-prometheus.sh      #   Install Prometheus Server
+│   │   ├── install-loki.sh            #   Install Loki Server
+│   │   ├── install-promtail.sh        #   Install Promtail (Client)
+│   │   └── install-node-exporter.sh    #   Install Node Exporter
 │
 │   └── minio/
 │       └── transfer.sh                #   Interactive upload/download
@@ -137,10 +140,13 @@ Kamu akan melihat menu interaktif seperti ini:
 ║    12) Install sqlpackage (DAC Utility)                   ║
 ║                                                          ║
 ║  MONITORING                                              ║
-║    13) Install Promtail (Loki Client)                     ║
+║    13) Install Prometheus Server                          ║
+║    14) Install Loki Server                                ║
+║    15) Install Promtail (Loki Client)                     ║
+║    16) Install Node Exporter                              ║
 ║                                                          ║
 ║  TOOLS                                                   ║
-║    14) MinIO Transfer (Upload/Download)                   ║
+║    17) MinIO Transfer (Upload/Download)                   ║
 ║                                                          ║
 ║    0)  Exit                                               ║
 ║                                                          ║
@@ -204,7 +210,10 @@ Transfer file/folder interaktif (Upload, Download, Sync) antara Local dan MinIO.
 - ✅ **New Module**: SQL Server Agent Enabler
 - ✅ **New Module**: Promtail Installer (Loki Client)
 - ✅ **New Module**: MinIO Transfer Tool
-- ✅ **New Module**: Kubernetes Dependencies Installer (Mass Install)
+- ✅ **New Module**: Prometheus Server Installer
+- ✅ **New Module**: Loki Server Installer
+- ✅ **New Module**: Promtail Installer (Loki Client)
+- ✅ **New Module**: Node Exporter Installer
 - ✅ Auto-detect architecture untuk semua downloads
 
 ---
