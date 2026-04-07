@@ -43,8 +43,15 @@ case "$OS_ARCH" in
   *)       ARCH="amd64" ; log_warn "Arsitektur tidak didukung otomatis ($OS_ARCH), menggunakan default amd64" ;;
 esac
 
-LATEST_VERSION=$(curl -s "https://api.github.com/repos/prometheus/node_exporter/releases/latest" | jq -r .tag_name | sed 's/^v//')
-log_ok "Versi terbaru ditemukan: v$LATEST_VERSION"
+log_info "Mencari versi terbaru Node Exporter..."
+LATEST_VERSION=$(curl -sL "https://api.github.com/repos/prometheus/node_exporter/releases/latest" | jq -r .tag_name | sed 's/^v//')
+
+if [[ -z "$LATEST_VERSION" || "$LATEST_VERSION" == "null" ]]; then
+  LATEST_VERSION="1.7.0" # Fallback stable
+  log_warn "Gagal mencari versi via GitHub API. Menggunakan fallback: $LATEST_VERSION"
+else
+  log_ok "Versi terbaru ditemukan: v$LATEST_VERSION"
+fi
 
 # ─── 3. Installation Flow ───
 DO_INSTALL=true

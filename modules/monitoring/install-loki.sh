@@ -44,11 +44,11 @@ case "$OS_ARCH" in
 esac
 
 # Find the latest release that actually contains the loki-linux binary zip asset
-LATEST_VERSION=$(curl -s "https://api.github.com/repos/grafana/loki/releases?per_page=10" | \
+LATEST_VERSION=$(curl -sL "https://api.github.com/repos/grafana/loki/releases?per_page=10" | \
   jq -r ".[] | select(.assets[].name | contains(\"loki-linux-$ARCH.zip\")) | .tag_name" | \
   head -n 1 | sed 's/^v//')
 
-if [[ -z "$LATEST_VERSION" ]]; then
+if [[ -z "$LATEST_VERSION" || "$LATEST_VERSION" == "null" ]]; then
   LATEST_VERSION="3.0.0"
   log_warn "Gagal mencari versi terbaru dengan binari Loki, menggunakan fallback: $LATEST_VERSION"
 else

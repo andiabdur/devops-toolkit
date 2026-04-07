@@ -60,14 +60,22 @@ case "$OS_ARCH" in
   *)       ARCH="amd64" ; log_warn "Arsitektur tidak didukung otomatis ($OS_ARCH), menggunakan default amd64" ;;
 esac
 
-LATEST_VERSION=$(curl -s "https://api.github.com/repos/nginxinc/nginx-prometheus-exporter/releases/latest" | jq -r .tag_name | sed 's/^v//')
-log_ok "Versi terbaru ditemukan: v$LATEST_VERSION"
+log_info "Mencari versi terbaru Nginx Exporter..."
+LATEST_VERSION=$(curl -sL "https://api.github.com/repos/nginxinc/nginx-prometheus-exporter/releases/latest" | jq -r .tag_name | sed 's/^v//')
+
+if [[ -z "$LATEST_VERSION" || "$LATEST_VERSION" == "null" ]]; then
+  LATEST_VERSION="1.5.1" # Fallback stable
+  log_warn "Gagal mendapatkan versi via GitHub API (Redirect/Rate Limit). Menggunakan fallback: $LATEST_VERSION"
+else
+  log_ok "Versi terbaru ditemukan: v$LATEST_VERSION"
+fi
 
 # ─── 3. Install Binary ───
 print_section "Installing Nginx Exporter Binary"
 
-TAR_NAME="nginx-prometheus-exporter_${LATEST_VERSION}_linux_${ARCH}.tar.gz"
-DOWNLOAD_URL="https://github.com/nginxinc/nginx-prometheus-exporter/releases/download/v${LATEST_VERSION}/${TAR_NAME}"
+CLEAN_VERSION=$(echo "$LATEST_VERSION" | sed 's/^v//')
+TAR_NAME="nginx-prometheus-exporter_${CLEAN_VERSION}_linux_${ARCH}.tar.gz"
+DOWNLOAD_URL="https://github.com/nginxinc/nginx-prometheus-exporter/releases/download/v${CLEAN_VERSION}/${TAR_NAME}"
 BIN_PATH="/usr/local/bin/nginx-prometheus-exporter"
 
 log_step "Downloading $DOWNLOAD_URL ..."
