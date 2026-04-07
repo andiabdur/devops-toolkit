@@ -155,8 +155,43 @@ sudo systemctl restart promtail
 
 log_ok "Promtail service is running"
 
-# final check
-sudo systemctl is-active promtail || log_error "Gagal menjalankan promtail. Cek logs: journalctl -u promtail"
+# ─── 7. Verification ───
+print_section "Verifying Connection"
+
+log_info "Waiting for service to stabilize (5s)..."
+sleep 5
+
+# Check 1: Target file presence
+if [[ ! -f "/var/log/nginx/access-vhost.log" ]]; then
+  log_warn "File log /var/log/nginx/access-vhost.log tidak ditemukan!"
+  log_info "Pastikan Nginx sudah setup vhost logging ke path tersebut, agar Promtail bisa mengirim data."
+else
+  log_ok "Log file ditemukan: /var/log/nginx/access-vhost.log"
+fi
+
+# Check 2: Connectivity to Loki
+LOKI_BASE=$(echo "$LOKI_URL" | sed 's/\/loki\/api\/v1\/push//')
+log_info "Checking connectivity to Loki at $LOKI_BASE ..."
+if curl -s --connect-timeout 5 "$LOKI_BASE/ready" | grep -q "ready"; then
+  log_ok "Loki Server is READY"
+else
+  log_warn "Loki Server tidak merespon /ready. Cek koneksi atau URL Loki kamu."
+fi
+
+# Check 3: Promtail metrics/targets
+log_info "Checking Promtail internal status..."
+if curl -s localhost:9080/targets | grep -q "nginx_vhost"; then
+  log_ok "Promtail target 'nginx_vhost' is ACTIVE"
+else
+  log_error "Promtail target tidak aktif. Cek konfigurasi di $CONFIG_FILE"
+fi
+
+# Check 4: Journal errors
+if sudo journalctl -u promtail -n 50 | grep -qi "error"; then
+  log_warn "Ditemukan error pada log Promtail. Cek detail dengan: journalctl -u promtail -f"
+else
+  log_ok "Tidak ada error kritis terdeteksi di journalctl."
+fi
 
 # ─── Done ───
 echo ""
@@ -166,4 +201,8 @@ log_info "Loki URL  : $LOKI_URL"
 log_info "Hostname  : $SERVER_NAME"
 log_info "Config    : $CONFIG_FILE"
 log_info "Path Logs : /var/log/nginx/access-vhost.log"
+echo ""
+log_info "Informasi Tambahan:"
+log_info "- Cek status target: curl http://localhost:9080/targets"
+log_info "- Cek di Grafana   : Query {server=\"$SERVER_NAME\", job=\"nginx_vhost_logs\"}"
 echo ""
