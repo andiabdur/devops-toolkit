@@ -37,17 +37,30 @@ require_command "kubectl" "Install kubectl: https://kubernetes.io/docs/tasks/too
 # ─── Install Velero CLI ───
 print_section "Velero CLI"
 
+if ! command -v jq &>/dev/null; then
+  log_info "Installing prerequisites (jq)..."
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get update -yqq && sudo apt-get install -y jq curl tar
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y epel-release && sudo yum install -y jq curl tar
+  fi
+fi
+
 if command -v velero &>/dev/null; then
   log_ok "Velero CLI sudah ada → $(velero version --client-only 2>/dev/null | head -1)"
 else
   log_info "Velero CLI belum ada, installing latest..."
 
-  VELERO_VERSION=$(curl -s https://api.github.com/repos/vmware-tanzu/velero/releases/latest \
-    | grep '"tag_name"' | cut -d '"' -f 4)
+  VELERO_VERSION=$(curl -sL https://api.github.com/repos/vmware-tanzu/velero/releases/latest | jq -r .tag_name)
+
+  if [[ -z "$VELERO_VERSION" || "$VELERO_VERSION" == "null" ]]; then
+    VELERO_VERSION="v1.14.0" # Fallback version
+    log_warn "Gagal mendapatkan versi via GitHub API. Menggunakan fallback: $VELERO_VERSION"
+  fi
 
   log_info "Velero version: ${VELERO_VERSION}"
 
-  curl -L "https://github.com/vmware-tanzu/velero/releases/download/${VELERO_VERSION}/velero-${VELERO_VERSION}-linux-amd64.tar.gz" \
+  curl -fSL "https://github.com/vmware-tanzu/velero/releases/download/${VELERO_VERSION}/velero-${VELERO_VERSION}-linux-amd64.tar.gz" \
     | tar -xz
 
   sudo mv "velero-${VELERO_VERSION}-linux-amd64/velero" /usr/local/bin/velero
